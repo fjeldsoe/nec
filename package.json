@@ -2,6 +2,7 @@
     "name": "nec",
     "version": "0.1.0",
     "private": true,
+    "homepage": "https://fjeldsoe.github.io/nec",
     "dependencies": {
         "firebase": "~5.9.3",
         "gh-pages": "~2.0.1",
