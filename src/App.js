@@ -1,9 +1,8 @@
-import React, { Component } from 'react';
-import styled from 'styled-components';
+import React, { useState, useEffect } from 'react';
 import uuid from 'uuid/v4';
 import firebase from 'firebase';
 import 'firebase/firestore';
-import { resolve } from 'path';
+import Gallery from './Gallery';
 
 const config = {
     apiKey: 'AIzaSyDHmbdXOUwR8oEHREt-Qc1Pwe6CQYrcQx0',
@@ -18,10 +17,9 @@ firebase.initializeApp(config);
 
 const db = firebase.firestore();
 const galleryCollection = db.collection('gallery');
+const getGalleryCollection = galleryCollection.get();
 const storage = firebase.storage();
 const storageRef = storage.ref();
-
-readDb();
 
 function onDropHandler(event) {
     event.preventDefault();
@@ -37,6 +35,27 @@ function onDropHandler(event) {
     upload(images)
         .then(getDownloadURLs)
         .then(addToDb);
+}
+
+function uploadProgress(snapshot) {
+    var progress = (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
+    console.log('Upload is ' + progress + '% done');
+}
+
+function upload(images) {
+    return Promise.all(
+        images.map(image => {
+            return new Promise(resolve => {
+                const id = uuid();
+                const imageRef = storageRef.child(`gallery/${id}.jpg`);
+                const uploadTask = imageRef.put(image);
+                uploadTask.on('state_changed', uploadProgress);
+                uploadTask.then(snapshot => {
+                    resolve({ ...snapshot, id });
+                });
+            });
+        })
+    );
 }
 
 function getDownloadURLs(snapshots) {
@@ -59,7 +78,6 @@ function addToDb(imagesData) {
             metadata: { bucket, md5Hash, name, size, timeCreated, updated }
         } = imageData;
 
-        console.log(id, downloadUrl);
         galleryCollection.doc(id).set({
             downloadUrl,
             metadata: {
@@ -74,37 +92,38 @@ function addToDb(imagesData) {
     });
 }
 
-function readDb() {
-    galleryCollection.get().then(snapshot => {
-        console.log(snapshot);
-    });
-}
-
 function onDragoverHandler(event) {
     event.preventDefault();
 }
 
-function upload(images) {
-    return Promise.all(
-        images.map(image => {
-            return new Promise(resolve => {
-                const id = uuid();
-                const imageRef = storageRef.child(`gallery/${id}.jpg`);
-                imageRef.put(image).then(snapshot => {
-                    resolve({ ...snapshot, id });
-                });
-            });
-        })
-    );
-}
-
-document.addEventListener('drop', onDropHandler);
-document.addEventListener('dragover', onDragoverHandler);
-
-const Wrapper = styled.div``;
-
 function App() {
-    return <Wrapper className="App"> React app </Wrapper>;
+    const [images, setImages] = useState([]);
+
+    useEffect(() => {
+        async function waitForDb() {
+            const querySnapshot = await getGalleryCollection;
+            const imagesFromDb = [];
+            querySnapshot.forEach(doc => {
+                const id = doc.id;
+                const data = doc.data();
+                imagesFromDb.push({ id, ...data });
+            });
+            setImages(imagesFromDb);
+        }
+
+        waitForDb();
+
+        galleryCollection.onSnapshot(function(querySnapshot) {
+            querySnapshot.forEach(function(doc) {
+                console.log(doc.data());
+            });
+        });
+
+        document.addEventListener('drop', onDropHandler);
+        document.addEventListener('dragover', onDragoverHandler);
+    }, []);
+
+    return <Gallery images={images} />;
 }
 
 export default App;
