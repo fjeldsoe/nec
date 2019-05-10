@@ -7,6 +7,7 @@ const Wrapper = styled.div`
     flex-wrap: wrap;
     padding: 5px;
 `;
+
 const ImageLink = styled(Link)`
     flex: 1 1 auto;
     width: 25%;
