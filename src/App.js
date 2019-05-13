@@ -27,7 +27,7 @@ function upload(images, setUploadProgress) {
         images.map(image => {
             return new Promise(resolve => {
                 const id = uuid();
-                const imageRef = storageRef.child(`gallery/${id}.jpg`);
+                const imageRef = storageRef.child(`gallery/${id}/original.jpg`);
                 const uploadTask = imageRef.put(image);
                 uploadTask.on('state_changed', function uploadProgress(snapshot) {
                     var progress = (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
@@ -84,7 +84,7 @@ function deleteDocRef(id) {
 }
 
 function deleteImageRef(id) {
-    return storageRef.child(`gallery/${id}.jpg`).delete();
+    return storageRef.child(`gallery/${id}/original.jpg`).delete();
 }
 
 function App() {
@@ -102,9 +102,9 @@ function App() {
             return file.type.includes('image') ? [...acc, file] : acc;
         }, []);
 
-        upload(images, setUploadProgress)
-            .then(getDownloadURLs)
-            .then(addToDb);
+        upload(images, setUploadProgress);
+        //.then(getDownloadURLs);
+        //.then(addToDb);
     }
 
     function removeImage(image) {

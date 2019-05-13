@@ -5,6 +5,14 @@ const mkdirp = require('mkdirp-promise');
 const path = require('path');
 const os = require('os');
 const fs = require('fs');
+const admin = require('firebase-admin');
+
+admin.initializeApp({
+    credential: admin.credential.applicationDefault(),
+    databaseURL: 'https://necgallery-9b4b2.firebaseio.com'
+});
+
+const { join, dirname } = path;
 
 const runtimeOpts = {
     timeoutSeconds: 300,
@@ -15,82 +23,90 @@ const runtimeOpts = {
 exports.optimizeImages = functions
     .runWith(runtimeOpts)
     .storage.object()
-    .onFinalize(data => {
-        // File and directory paths.
-        const filePath = data.name;
-        const tempLocalFile = path.join(os.tmpdir(), filePath);
-        const tempLocalDir = path.dirname(tempLocalFile);
-
+    .onFinalize(async data => {
         // Exit if this is triggered on a file that is not an image.
         if (!data.contentType.startsWith('image/')) {
             console.log('This is not an image.');
-            return null;
+            return false;
         }
 
         // Exit if this is a move or deletion event.
         if (data.resourceState === 'not_exists') {
             console.log('This is a deletion event.');
-            return null;
+            return false;
         }
 
         // Exit if file exists but is not new and is only being triggered
         // because of a metadata change.
         if (data.resourceState === 'exists' && data.metageneration > 1) {
             console.log('This is a metadata change event.');
-            return null;
+            return false;
         }
 
-        const size = '1000x1000>';
+        // File and directory paths.
+        const filePath = data.name;
+        const tempLocalFile = path.join(os.tmpdir(), filePath);
+        const tempLocalDir = path.dirname(tempLocalFile);
+        const bucketDir = dirname(filePath);
+        const id = bucketDir.split('/').pop();
 
         // Cloud Storage files.
         const bucket = gcs.bucket(data.bucket);
         const file = bucket.file(filePath);
+        const [metadata] = await file.getMetadata();
 
-        return file
-            .getMetadata()
-            .then(([metadata]) => {
-                if (metadata.metadata && metadata.metadata.optimized) {
-                    return Promise.reject(new Error('Image has been already optimized'));
-                }
-                return Promise.resolve();
-            })
-            .then(() => mkdirp(tempLocalDir))
-            .then(() => file.download({ destination: tempLocalFile }))
-            .then(() => {
-                console.log('Resize to: ' + size);
-                return spawn('convert', [
-                    tempLocalFile,
-                    '-geometry',
-                    size,
-                    '-gravity',
-                    'center',
-                    '-strip',
-                    '-interlace',
-                    'Plane',
-                    '-quality',
-                    '90',
-                    tempLocalFile
-                ]);
-            })
-            .then(() => {
-                console.log('Optimized image created at', tempLocalFile);
-                // Uploading the Optimized image.
-                return bucket.upload(tempLocalFile, {
-                    destination: file,
-                    metadata: {
+        if (metadata.metadata && metadata.metadata.optimized) {
+            return new Error('Image has been already optimized');
+        }
+
+        var db = admin.firestore();
+
+        const sizes = ['400x400>', '600x600>', '800x800>', '1000x1000>'];
+
+        await mkdirp(tempLocalDir);
+        await file.download({ destination: tempLocalFile });
+        const [...urls] = await Promise.all(
+            sizes.map(async size => {
+                return new Promise(async resolve => {
+                    await spawn('convert', [
+                        tempLocalFile,
+                        '-geometry',
+                        size,
+                        '-gravity',
+                        'center',
+                        '-strip',
+                        '-interlace',
+                        'Plane',
+                        '-quality',
+                        '90',
+                        tempLocalFile
+                    ]);
+                    const [file] = await bucket.upload(tempLocalFile, {
+                        destination: join(bucketDir, size.split('>')[0]),
                         metadata: {
-                            optimized: true
+                            metadata: {
+                                optimized: true
+                            }
                         }
-                    }
+                    });
+                    file.getSignedUrl({ action: 'read', expires: '03-17-2025' }, (err, url) => {
+                        if (err) {
+                            console.log(err);
+                            return;
+                        }
+                        resolve({ [size.split('>')[0]]: url });
+                    });
                 });
             })
-            .then(() => {
-                console.log('Optimized image uploaded to Storage at', file);
-                // Once the image has been uploaded delete the local files to free up disk space.
-                fs.unlinkSync(tempLocalFile);
-                return null;
-            })
-            .catch(error => {
-                console.error('Cloud function error', error);
+        );
+
+        await db
+            .collection('gallery')
+            .doc(id)
+            .set({
+                downloadUrls: urls,
+                metadata
             });
+
+        return fs.unlinkSync(tempLocalFile);
     });

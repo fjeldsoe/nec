@@ -42,6 +42,15 @@ const UploadIndicator = styled.div`
 function App(props) {
     const { images, uploadProgress } = props;
 
+    console.log(images);
+
+    const srcsetStrings = image =>
+        image.downloadUrls.map(obj => {
+            const [key, url] = Object.entries(obj)[0];
+            const width = key.split('x')[0];
+            return `${url} ${width}w`;
+        });
+
     return (
         <>
             <UploadIndicator uploadProgress={uploadProgress} />
@@ -49,7 +58,13 @@ function App(props) {
                 {images.length ? (
                     images.map(image => (
                         <ImageLink to={`/${image.id}`} key={image.id}>
-                            <Image key={image.id} src={image.downloadUrl} alt={image.metadata.name} />
+                            <Image
+                                key={image.id}
+                                srcSet={srcsetStrings(image).join(', ')}
+                                src={Object.values(image.downloadUrls[0])[0]}
+                                alt={image.metadata.name}
+                                loading="lazy"
+                            />
                         </ImageLink>
                     ))
                 ) : (
