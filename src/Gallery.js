@@ -1,6 +1,7 @@
 import React from 'react';
 import styled from 'styled-components';
 import { Link } from 'react-router-dom';
+import Image from './Image';
 
 const Wrapper = styled.div`
     display: flex;
@@ -9,15 +10,9 @@ const Wrapper = styled.div`
 `;
 
 const ImageLink = styled(Link)`
-    flex: 1 1 auto;
-    width: 25%;
-    margin: 5px;
-`;
-
-const Image = styled.img`
+    flex: 0 0 auto;
     width: 100%;
-    height: 100%;
-    object-fit: cover;
+    margin: 5px;
 `;
 
 const UploadIndicator = styled.div`
@@ -44,13 +39,6 @@ function App(props) {
 
     console.log(images);
 
-    const srcsetStrings = image =>
-        image.downloadUrls.map(obj => {
-            const [key, url] = Object.entries(obj)[0];
-            const width = key.split('x')[0];
-            return `${url} ${width}w`;
-        });
-
     return (
         <>
             <UploadIndicator uploadProgress={uploadProgress} />
@@ -58,13 +46,7 @@ function App(props) {
                 {images.length ? (
                     images.map(image => (
                         <ImageLink to={`/${image.id}`} key={image.id}>
-                            <Image
-                                key={image.id}
-                                srcSet={srcsetStrings(image).join(', ')}
-                                src={Object.values(image.downloadUrls[0])[0]}
-                                alt={image.metadata.name}
-                                loading="lazy"
-                            />
+                            <Image key={image.id} image={image} />
                         </ImageLink>
                     ))
                 ) : (

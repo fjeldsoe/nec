@@ -1,5 +1,6 @@
 import React from 'react';
 import styled from 'styled-components';
+import Image from './Image';
 
 const Wrapper = styled.div`
     height: 100%;
@@ -14,21 +15,8 @@ const ImageWrapper = styled.div`
     align-items: center;
 `;
 
-const Image = styled.img`
-    flex: 0 1 auto;
-    width: auto;
-    height: auto;
-    max-width: 100%;
-    max-height: 100%;
-`;
-
 export default props => {
-    const {
-        history,
-        image,
-        image: { downloadUrl },
-        removeImage
-    } = props;
+    const { history, image, removeImage } = props;
 
     console.log(props);
     return (
@@ -38,7 +26,7 @@ export default props => {
                 <button onClick={() => removeImage(image)}>Slet billede</button>
             </div>
             <ImageWrapper>
-                <Image src={downloadUrl} alt="" />
+                <Image image={image} />
             </ImageWrapper>
         </Wrapper>
     );

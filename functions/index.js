@@ -6,6 +6,7 @@ const path = require('path');
 const os = require('os');
 const fs = require('fs');
 const admin = require('firebase-admin');
+const vision = require('@google-cloud/vision');
 
 admin.initializeApp({
     credential: admin.credential.applicationDefault(),
@@ -45,8 +46,9 @@ exports.optimizeImages = functions
 
         // File and directory paths.
         const filePath = data.name;
-        const tempLocalFile = path.join(os.tmpdir(), filePath);
-        const tempLocalDir = path.dirname(tempLocalFile);
+        const sourceFileName = data.name.split('/').pop();
+        const tempWorkingDir = path.join(os.tmpdir(), 'workingDir');
+        const tempSourceFile = path.join(tempWorkingDir, sourceFileName);
         const bucketDir = dirname(filePath);
         const id = bucketDir.split('/').pop();
 
@@ -54,22 +56,33 @@ exports.optimizeImages = functions
         const bucket = gcs.bucket(data.bucket);
         const file = bucket.file(filePath);
         const [metadata] = await file.getMetadata();
+        console.log(metadata);
 
         if (metadata.metadata && metadata.metadata.optimized) {
             return new Error('Image has been already optimized');
         }
+        console.log(tempSourceFile);
+        try {
+            const client = new vision.ImageAnnotatorClient();
+            const [result] = await client.imageProperties(`gs://necgallery-9b4b2/${tempSourceFile}`);
+            console.log(result);
+            const colors = result.imagePropertiesAnnotation.dominantColors.colors;
+            colors.forEach(color => console.log(color));
+        } catch (err) {
+            console.log('Vision error: ', err);
+        }
 
-        var db = admin.firestore();
+        const sizes = ['400x400>', '600x600>', '800x800>', '1000x1000>', '2000x2000>'];
 
-        const sizes = ['400x400>', '600x600>', '800x800>', '1000x1000>'];
-
-        await mkdirp(tempLocalDir);
-        await file.download({ destination: tempLocalFile });
+        await mkdirp(tempWorkingDir);
+        await file.download({ destination: tempSourceFile });
         const [...urls] = await Promise.all(
             sizes.map(async size => {
                 return new Promise(async resolve => {
+                    const optimizedFileName = `${size.split('>')[0]}.jpg`;
+                    const tempOptimizedFile = join(tempWorkingDir, optimizedFileName);
                     await spawn('convert', [
-                        tempLocalFile,
+                        tempSourceFile,
                         '-geometry',
                         size,
                         '-gravity',
@@ -79,17 +92,17 @@ exports.optimizeImages = functions
                         'Plane',
                         '-quality',
                         '90',
-                        tempLocalFile
+                        tempOptimizedFile
                     ]);
-                    const [file] = await bucket.upload(tempLocalFile, {
-                        destination: join(bucketDir, size.split('>')[0]),
+                    const [file] = await bucket.upload(tempOptimizedFile, {
+                        destination: join(bucketDir, optimizedFileName),
                         metadata: {
                             metadata: {
                                 optimized: true
                             }
                         }
                     });
-                    file.getSignedUrl({ action: 'read', expires: '03-17-2025' }, (err, url) => {
+                    file.getSignedUrl({ action: 'read', expires: '01-01-2100' }, (err, url) => {
                         if (err) {
                             console.log(err);
                             return;
@@ -100,6 +113,8 @@ exports.optimizeImages = functions
             })
         );
 
+        const db = admin.firestore();
+
         await db
             .collection('gallery')
             .doc(id)
@@ -108,5 +123,7 @@ exports.optimizeImages = functions
                 metadata
             });
 
-        return fs.unlinkSync(tempLocalFile);
+        await file.delete();
+
+        return fs.unlinkSync(tempSourceFile);
     });

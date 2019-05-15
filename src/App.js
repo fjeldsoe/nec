@@ -41,40 +41,6 @@ function upload(images, setUploadProgress) {
     );
 }
 
-function getDownloadURLs(snapshots) {
-    return Promise.all(
-        snapshots.map(snapshot => {
-            return new Promise(resolve => {
-                snapshot.ref.getDownloadURL().then(downloadUrl => {
-                    resolve({ ...snapshot, downloadUrl });
-                });
-            });
-        })
-    );
-}
-
-function addToDb(imagesData) {
-    imagesData.forEach(imageData => {
-        const {
-            id,
-            downloadUrl,
-            metadata: { bucket, md5Hash, name, size, timeCreated, updated }
-        } = imageData;
-
-        galleryCollection.doc(id).set({
-            downloadUrl,
-            metadata: {
-                bucket,
-                md5Hash,
-                name,
-                size,
-                timeCreated,
-                updated
-            }
-        });
-    });
-}
-
 function onDragoverHandler(event) {
     event.preventDefault();
 }
@@ -83,8 +49,8 @@ function deleteDocRef(id) {
     return galleryCollection.doc(id).delete();
 }
 
-function deleteImageRef(id) {
-    return storageRef.child(`gallery/${id}/original.jpg`).delete();
+function deleteImageRef(path) {
+    return storageRef.child(path).delete();
 }
 
 function App() {
@@ -103,14 +69,16 @@ function App() {
         }, []);
 
         upload(images, setUploadProgress);
-        //.then(getDownloadURLs);
-        //.then(addToDb);
     }
 
     function removeImage(image) {
-        const { id } = image;
-
-        Promise.all([deleteImageRef(id), deleteDocRef(id)])
+        console.log(image);
+        const { id, downloadUrls } = image;
+        const keys = downloadUrls.map(obj => {
+            const [key] = Object.keys(obj);
+            return key;
+        });
+        Promise.all([keys.map(key => deleteImageRef(`gallery/${id}/${key}.jpg`)), deleteDocRef(id)])
             .then(function() {
                 console.log('success');
                 // File deleted successfully
