@@ -43,15 +43,13 @@ function App(props) {
         <>
             <UploadIndicator uploadProgress={uploadProgress} />
             <Wrapper>
-                {images.length ? (
-                    images.map(image => (
-                        <ImageLink to={`/${image.id}`} key={image.id}>
-                            <Image key={image.id} image={image} />
-                        </ImageLink>
-                    ))
-                ) : (
-                    <div>Loading...</div>
-                )}
+                {images.length
+                    ? images.map(image => (
+                          <ImageLink to={`/image/${image.id}`} key={image.id}>
+                              <Image key={image.id} image={image} />
+                          </ImageLink>
+                      ))
+                    : null}
             </Wrapper>
         </>
     );

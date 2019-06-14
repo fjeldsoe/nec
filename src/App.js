@@ -2,6 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { BrowserRouter as Router, Route, Switch, Redirect } from 'react-router-dom';
 import uuid from 'uuid/v4';
 import firebase from 'firebase';
+import 'firebase/auth';
+import StyledFirebaseAuth from 'react-firebaseui/StyledFirebaseAuth';
 import 'firebase/firestore';
 import Gallery from './Gallery';
 import ImageDetails from './ImageDetails';
@@ -55,6 +57,7 @@ function deleteImageRef(path) {
 
 function App() {
     const [images, setImages] = useState([]);
+    const [user, setUser] = useState(false);
     const [uploadProgress, setUploadProgress] = useState(0);
 
     function onDropHandler(event) {
@@ -72,7 +75,6 @@ function App() {
     }
 
     function removeImage(image) {
-        console.log(image);
         const { id, downloadUrls } = image;
         const keys = downloadUrls.map(obj => {
             const [key] = Object.keys(obj);
@@ -88,6 +90,20 @@ function App() {
                 // Uh-oh, an error occurred!
             });
     }
+
+    // Check login status
+    useEffect(() => {
+        const unregisterAuthObserver = firebase.auth().onAuthStateChanged(function(user) {
+            if (user) {
+                setUser(user);
+                console.log(user);
+            }
+        });
+
+        return () => {
+            unregisterAuthObserver();
+        };
+    }, []);
 
     useEffect(() => {
         galleryCollection.onSnapshot(function(querySnapshot) {
@@ -114,7 +130,7 @@ function App() {
                 />
                 <Route
                     exact
-                    path="/:id"
+                    path="/image/:id"
                     render={props => {
                         if (images.length) {
                             const id = props.match.params.id;
@@ -125,11 +141,29 @@ function App() {
                                 <Redirect to="/" />
                             );
                         } else {
-                            return <div>Vent venligst...</div>;
+                            return <Redirect to="/" />;
                         }
                     }}
                 />
-                <Route render={() => <div>Siden findes ikke :(</div>} />
+                <Route
+                    exact
+                    path="/login"
+                    render={() =>
+                        user === false ? (
+                            <StyledFirebaseAuth
+                                uiConfig={{
+                                    signInFlow: 'popup',
+                                    signInSuccessUrl: '/',
+                                    signInOptions: [firebase.auth.FacebookAuthProvider.PROVIDER_ID]
+                                }}
+                                firebaseAuth={firebase.auth()}
+                            />
+                        ) : (
+                            <Redirect to="/" />
+                        )
+                    }
+                />
+                {/* <Route render={() => <Redirect to="/" />} /> */}
             </Switch>
         </Router>
     );
