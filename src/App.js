@@ -82,7 +82,7 @@ function App() {
         });
         Promise.all([keys.map(key => deleteImageRef(`gallery/${id}/${key}.jpg`)), deleteDocRef(id)])
             .then(function() {
-                console.log('success');
+                console.log('successfully deleted images');
                 // File deleted successfully
             })
             .catch(function(error) {

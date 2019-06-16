@@ -56,18 +56,20 @@ exports.optimizeImages = functions
         const bucket = gcs.bucket(data.bucket);
         const file = bucket.file(filePath);
         const [metadata] = await file.getMetadata();
-        console.log(metadata);
 
         if (metadata.metadata && metadata.metadata.optimized) {
             return new Error('Image has been already optimized');
         }
-        console.log(tempSourceFile);
+
+        const visionData = {};
+
         try {
+            const imagePath = 'gs://' + join(data.bucket, data.name);
             const client = new vision.ImageAnnotatorClient();
-            const [result] = await client.imageProperties(`gs://necgallery-9b4b2/${tempSourceFile}`);
-            console.log(result);
-            const colors = result.imagePropertiesAnnotation.dominantColors.colors;
-            colors.forEach(color => console.log(color));
+            const [labelResult] = await client.labelDetection(imagePath);
+            const [colorResult] = await client.imageProperties(imagePath);
+            visionData.labels = labelResult.labelAnnotations;
+            visionData.colors = colorResult.imagePropertiesAnnotation.dominantColors.colors;
         } catch (err) {
             console.log('Vision error: ', err);
         }
@@ -120,10 +122,14 @@ exports.optimizeImages = functions
             .doc(id)
             .set({
                 downloadUrls: urls,
-                metadata
+                metadata: { ...metadata, visionData }
             });
 
-        await file.delete();
+        try {
+            await file.delete();
+        } catch (err) {
+            console.log('file.delete() failed: ', err);
+        }
 
         return fs.unlinkSync(tempSourceFile);
     });

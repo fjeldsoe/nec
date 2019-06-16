@@ -37,8 +37,6 @@ const UploadIndicator = styled.div`
 function App(props) {
     const { images, uploadProgress } = props;
 
-    console.log(images);
-
     return (
         <>
             <UploadIndicator uploadProgress={uploadProgress} />
