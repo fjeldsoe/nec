@@ -2,6 +2,7 @@ import React from 'react';
 import styled from 'styled-components';
 import { Link } from 'react-router-dom';
 import Image from './Image';
+import breakpoints, { breakpointUp } from './breakpoints';
 
 const Wrapper = styled.div`
     display: flex;
@@ -11,8 +12,29 @@ const Wrapper = styled.div`
 
 const ImageLink = styled(Link)`
     flex: 0 0 auto;
+    width: calc(50%);
+    max-height: 300px;
+    padding: 5px;
+    overflow: hidden;
+
+    ${breakpointUp('sm')} {
+        width: calc(33.3%);
+    }
+
+    ${breakpointUp('md')} {
+        width: calc(25%);
+    }
+
+    ${breakpointUp('lg')} {
+        width: calc(20%);
+    }
+`;
+
+const Thumb = styled(Image)`
     width: 100%;
-    margin: 5px;
+    height: 100%;
+    object-fit: cover;
+    border-radius: 3px;
 `;
 
 const UploadIndicator = styled.div`
@@ -44,7 +66,7 @@ function App(props) {
                 {images.length
                     ? images.map(image => (
                           <ImageLink to={`/image/${image.id}`} key={image.id}>
-                              <Image key={image.id} image={image} />
+                              <Thumb key={image.id} image={image} sizes={`50vw, (min-width: ${breakpoints.sm}px) 33.3vw, (min-width: ${breakpoints.md}px) 25vw, (min-width: ${breakpoints.lg}px) 20vw`} />
                           </ImageLink>
                       ))
                     : null}

@@ -25,6 +25,7 @@ exports.optimizeImages = functions
     .runWith(runtimeOpts)
     .storage.object()
     .onFinalize(async data => {
+        console.log(data);
         // Exit if this is triggered on a file that is not an image.
         if (!data.contentType.startsWith('image/')) {
             console.log('This is not an image.');
@@ -66,18 +67,21 @@ exports.optimizeImages = functions
         try {
             const imagePath = 'gs://' + join(data.bucket, data.name);
             const client = new vision.ImageAnnotatorClient();
-            const [labelResult] = await client.labelDetection(imagePath);
-            const [colorResult] = await client.imageProperties(imagePath);
+            const [[labelResult], [colorResult]] = await Promise.all([
+                client.labelDetection(imagePath),
+                client.imageProperties(imagePath)
+            ]);
             visionData.labels = labelResult.labelAnnotations;
             visionData.colors = colorResult.imagePropertiesAnnotation.dominantColors.colors;
         } catch (err) {
             console.log('Vision error: ', err);
         }
 
+        await Promise.all([mkdirp(tempWorkingDir), file.download({ destination: tempSourceFile })]);
+
+        console.log(file, tempSourceFile);
         const sizes = ['400x400>', '600x600>', '800x800>', '1000x1000>', '2000x2000>'];
 
-        await mkdirp(tempWorkingDir);
-        await file.download({ destination: tempSourceFile });
         const [...urls] = await Promise.all(
             sizes.map(async size => {
                 return new Promise(async resolve => {
@@ -93,7 +97,7 @@ exports.optimizeImages = functions
                         '-interlace',
                         'Plane',
                         '-quality',
-                        '90',
+                        '70',
                         tempOptimizedFile
                     ]);
                     const [file] = await bucket.upload(tempOptimizedFile, {

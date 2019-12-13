@@ -2,13 +2,14 @@ import React from 'react';
 import styled from 'styled-components';
 
 const Image = styled.img`
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
+    width: auto;
+    height: auto;
+    max-width: 100%;
+    max-height: 100%;
 `;
 
 export default props => {
-    const { image } = props;
+    const { image, className, sizes } = props;
 
     const srcsetStrings = image =>
         image.downloadUrls.map(obj => {
@@ -19,9 +20,11 @@ export default props => {
 
     return (
         <Image
+            className={className}
             key={image.id}
             srcSet={srcsetStrings(image).join(', ')}
             src={Object.values(image.downloadUrls[0])[0]}
+            sizes={sizes}
             alt={image.metadata.name}
             loading="lazy"
         />

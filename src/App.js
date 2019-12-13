@@ -1,5 +1,6 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, createContext } from 'react';
 import { BrowserRouter as Router, Route, Switch, Redirect } from 'react-router-dom';
+import styled from 'styled-components';
 import uuid from 'uuid/v4';
 import firebase from 'firebase';
 import 'firebase/auth';
@@ -7,6 +8,14 @@ import StyledFirebaseAuth from 'react-firebaseui/StyledFirebaseAuth';
 import 'firebase/firestore';
 import Gallery from './Gallery';
 import ImageDetails from './ImageDetails';
+
+const LoggedInBar = styled.div`
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px;
+    background: #999;
+`
 
 const config = {
     apiKey: 'AIzaSyDHmbdXOUwR8oEHREt-Qc1Pwe6CQYrcQx0',
@@ -23,24 +32,32 @@ const db = firebase.firestore();
 const galleryCollection = db.collection('gallery');
 const storage = firebase.storage();
 const storageRef = storage.ref();
+export const AppContext = createContext();
 
 function upload(images, setUploadProgress) {
     return Promise.all(
         images.map(image => {
-            return new Promise(resolve => {
+            return new Promise((resolve, reject) => {
                 const id = uuid();
+
                 const imageRef = storageRef.child(`gallery/${id}/original.jpg`);
                 const uploadTask = imageRef.put(image);
                 uploadTask.on('state_changed', function uploadProgress(snapshot) {
                     var progress = (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
                     setUploadProgress(progress);
                 });
-                uploadTask.then(snapshot => {
-                    resolve({ ...snapshot, id });
-                });
+                uploadTask
+                    .then(snapshot => {
+                        resolve({ ...snapshot, id });
+                    })
+                    .catch(err => {
+                        reject(new Error(err.message_));
+                    });
             });
         })
-    );
+    ).catch(err => {
+        alert(err);
+    });
 }
 
 function onDragoverHandler(event) {
@@ -75,6 +92,12 @@ function App() {
     }
 
     function removeImage(image) {
+        const sure = window.confirm('Er du sikker på du vil slette billedet?');
+
+        if (!sure) {
+            return;
+        }
+
         const { id, downloadUrls } = image;
         const keys = downloadUrls.map(obj => {
             const [key] = Object.keys(obj);
@@ -91,12 +114,16 @@ function App() {
             });
     }
 
+    async function signOut() {
+        await firebase.auth().signOut();
+        setUser(false)
+    }
+
     // Check login status
     useEffect(() => {
         const unregisterAuthObserver = firebase.auth().onAuthStateChanged(function(user) {
             if (user) {
                 setUser(user);
-                console.log(user);
             }
         });
 
@@ -121,51 +148,51 @@ function App() {
     }, []);
 
     return (
-        <Router>
-            <Switch>
-                <Route
-                    exact
-                    path="/"
-                    render={props => <Gallery {...props} images={images} uploadProgress={uploadProgress} />}
-                />
-                <Route
-                    exact
-                    path="/image/:id"
-                    render={props => {
-                        if (images.length) {
-                            const id = props.match.params.id;
-                            const image = images.find(image => image.id === id);
-                            return image ? (
-                                <ImageDetails {...props} image={image} removeImage={removeImage} />
+        <AppContext.Provider value={{ user }}>
+            {user && (<LoggedInBar><span>Hej {user.displayName}</span><button onClick={signOut}>Log ud</button></LoggedInBar>)}
+            <Router>
+                <Switch>
+                    <Route
+                        exact
+                        path="/"
+                        render={props => <Gallery {...props} images={images} uploadProgress={uploadProgress} />}
+                    />
+                    <Route
+                        exact
+                        path="/image/:id"
+                        render={props => {
+                            if (images.length) {
+                                const id = props.match.params.id;
+                                const image = images.find(image => image.id === id);
+                                return image ? (
+                                    <ImageDetails {...props} image={image} removeImage={removeImage} />
+                                ) : (
+                                    <Redirect to="/" />
+                                );
+                            }
+                        }}
+                    />
+                    <Route
+                        exact
+                        path="/login"
+                        render={() =>
+                            user === false ? (
+                                <StyledFirebaseAuth
+                                    uiConfig={{
+                                        signInFlow: 'popup',
+                                        signInSuccessUrl: '/',
+                                        signInOptions: [firebase.auth.FacebookAuthProvider.PROVIDER_ID]
+                                    }}
+                                    firebaseAuth={firebase.auth()}
+                                />
                             ) : (
                                 <Redirect to="/" />
-                            );
-                        } else {
-                            return <Redirect to="/" />;
+                            )
                         }
-                    }}
-                />
-                <Route
-                    exact
-                    path="/login"
-                    render={() =>
-                        user === false ? (
-                            <StyledFirebaseAuth
-                                uiConfig={{
-                                    signInFlow: 'popup',
-                                    signInSuccessUrl: '/',
-                                    signInOptions: [firebase.auth.FacebookAuthProvider.PROVIDER_ID]
-                                }}
-                                firebaseAuth={firebase.auth()}
-                            />
-                        ) : (
-                            <Redirect to="/" />
-                        )
-                    }
-                />
-                {/* <Route render={() => <Redirect to="/" />} /> */}
-            </Switch>
-        </Router>
+                    />
+                </Switch>
+            </Router>
+        </AppContext.Provider>
     );
 }
 
