@@ -43,7 +43,7 @@ const UploadIndicator = styled.div`
     left: 0;
     right: 0;
     height: 3px;
-    opacity: ${props => (props.uploadProgress === 0 || props.uploadProgress === 100 ? 0 : 1)};
+    opacity: ${(props) => (props.uploadProgress === 0 || props.uploadProgress === 100 ? 0 : 1)};
     transition: opacity 300ms;
     pointer-events: none;
 
@@ -51,7 +51,7 @@ const UploadIndicator = styled.div`
         content: '';
         display: block;
         height: inherit;
-        width: ${props => props.uploadProgress || 0}%;
+        width: ${(props) => props.uploadProgress || 0}%;
         background: #54a2e6;
     }
 `;
@@ -64,9 +64,13 @@ function App(props) {
             <UploadIndicator uploadProgress={uploadProgress} />
             <Wrapper>
                 {images.length
-                    ? images.map(image => (
+                    ? images.map((image) => (
                           <ImageLink to={`/image/${image.id}`} key={image.id}>
-                              <Thumb key={image.id} image={image} sizes={`50vw, (min-width: ${breakpoints.sm}px) 33.3vw, (min-width: ${breakpoints.md}px) 25vw, (min-width: ${breakpoints.lg}px) 20vw`} />
+                              <Thumb
+                                  key={image.id}
+                                  image={image}
+                                  sizes={`50vw, (min-width: ${breakpoints.sm}px) 33.3vw, (min-width: ${breakpoints.md}px) 25vw, (min-width: ${breakpoints.lg}px) 20vw`}
+                              />
                           </ImageLink>
                       ))
                     : null}

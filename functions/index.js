@@ -10,24 +10,24 @@ const vision = require('@google-cloud/vision');
 
 admin.initializeApp({
     credential: admin.credential.applicationDefault(),
-    databaseURL: 'https://necgallery-9b4b2.firebaseio.com'
+    databaseURL: 'https://necgallery-9b4b2.firebaseio.com',
 });
 
 const { join, dirname } = path;
 
 const runtimeOpts = {
     timeoutSeconds: 300,
-    memory: '1GB'
+    memory: '2GB',
 };
 
 // // Create and Deploy Your First Cloud Functions
 exports.optimizeImages = functions
     .runWith(runtimeOpts)
     .storage.object()
-    .onFinalize(async data => {
+    .onFinalize(async (data) => {
         console.log(data);
         // Exit if this is triggered on a file that is not an image.
-        if (!data.contentType.startsWith('image/')) {
+        if (!data && !data.contentType.startsWith('image/')) {
             console.log('This is not an image.');
             return false;
         }
@@ -69,7 +69,7 @@ exports.optimizeImages = functions
             const client = new vision.ImageAnnotatorClient();
             const [[labelResult], [colorResult]] = await Promise.all([
                 client.labelDetection(imagePath),
-                client.imageProperties(imagePath)
+                client.imageProperties(imagePath),
             ]);
             visionData.labels = labelResult.labelAnnotations;
             visionData.colors = colorResult.imagePropertiesAnnotation.dominantColors.colors;
@@ -83,8 +83,8 @@ exports.optimizeImages = functions
         const sizes = ['400x400>', '600x600>', '800x800>', '1000x1000>', '2000x2000>'];
 
         const [...urls] = await Promise.all(
-            sizes.map(async size => {
-                return new Promise(async resolve => {
+            sizes.map(async (size) => {
+                return new Promise(async (resolve) => {
                     const optimizedFileName = `${size.split('>')[0]}.jpg`;
                     const tempOptimizedFile = join(tempWorkingDir, optimizedFileName);
                     await spawn('convert', [
@@ -98,15 +98,15 @@ exports.optimizeImages = functions
                         'Plane',
                         '-quality',
                         '70',
-                        tempOptimizedFile
+                        tempOptimizedFile,
                     ]);
                     const [file] = await bucket.upload(tempOptimizedFile, {
                         destination: join(bucketDir, optimizedFileName),
                         metadata: {
                             metadata: {
-                                optimized: true
-                            }
-                        }
+                                optimized: true,
+                            },
+                        },
                     });
                     file.getSignedUrl({ action: 'read', expires: '01-01-2100' }, (err, url) => {
                         if (err) {
@@ -126,7 +126,7 @@ exports.optimizeImages = functions
             .doc(id)
             .set({
                 downloadUrls: urls,
-                metadata: { ...metadata, visionData }
+                metadata: { ...metadata, visionData },
             });
 
         try {

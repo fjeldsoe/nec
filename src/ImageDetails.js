@@ -8,7 +8,7 @@ const Wrapper = styled.div`
     height: 100%;
     display: flex;
     flex-direction: column;
-    background: ${props => props.gradient};
+    background: ${(props) => props.gradient};
 `;
 
 const ImageWrapper = styled.div`
@@ -29,40 +29,40 @@ const DetailedImage = styled(Image)`
 const ButtonBar = styled.div`
     display: flex;
     height: 60px;
-    border-top: 1px solid rgba(0,0,0,0.2)
-`
+    border-top: 1px solid rgba(0, 0, 0, 0.2);
+`;
 
 const Button = styled.button`
     flex: 1 1 50%;
     font-weight: bold;
     border: 0;
-`
-
-const BackButton = styled(Button)`
-    background: ${({backgroundColor}) => backgroundColor};
-    color: ${({fontColor}) => fontColor};
-`
-
-const DeleteButton = styled(Button)`
-    color: #FFF;
-    background: linear-gradient(0deg, rgba(162,0,0,1) 0%, rgba(218,0,0,1) 100%);
-`
-
-const ColorBlock = styled.span`
-    display: inline-block;
-    width: 30px;
-    height: 30px;
-    background-color: ${({ color }) => `rgb(${color.red},${color.green},${color.blue})`};
 `;
 
-export default props => {
+const BackButton = styled(Button)`
+    background: ${({ backgroundColor }) => backgroundColor};
+    color: ${({ fontColor }) => fontColor};
+`;
+
+const DeleteButton = styled(Button)`
+    color: #fff;
+    background: linear-gradient(0deg, rgba(162, 0, 0, 1) 0%, rgba(218, 0, 0, 1) 100%);
+`;
+
+// const ColorBlock = styled.span`
+//     display: inline-block;
+//     width: 30px;
+//     height: 30px;
+//     background-color: ${({ color }) => `rgb(${color.red},${color.green},${color.blue})`};
+// `;
+
+export default (props) => {
     const { history, image, removeImage } = props;
     const { colors } = image.metadata.visionData;
     const [primaryColor, secondaryColor] = colors
         .sort((a, b) => b.score - a.score)
         .reduce((acc, curr, index) => {
             const {
-                color: { red, green, blue }
+                color: { red, green, blue },
             } = curr;
             return index < 2 ? [...acc, `rgb(${red}, ${green}, ${blue})`] : acc;
         }, []);
@@ -70,7 +70,7 @@ export default props => {
     const [innerColor, outerColor] = [primaryColor, secondaryColor].sort((a, b) => getLuminance(b) - getLuminance(a));
     const { user } = useContext(AppContext);
     const gradient = `radial-gradient(circle, ${innerColor} 0%, ${outerColor} 100%)`;
-    const [fontColor] = ['#000', '#FFF'].sort((a,b) => getContrast(outerColor, b) - getContrast(outerColor, a))
+    const [fontColor] = ['#000', '#FFF'].sort((a, b) => getContrast(outerColor, b) - getContrast(outerColor, a));
 
     return (
         <>
@@ -79,7 +79,9 @@ export default props => {
                     <DetailedImage image={{ ...image }} sizes="90vw" />
                 </ImageWrapper>
                 <ButtonBar>
-                    <BackButton backgroundColor={outerColor} fontColor={fontColor} onClick={() => history.push('/')}>Tilbage</BackButton>
+                    <BackButton backgroundColor={outerColor} fontColor={fontColor} onClick={() => history.push('/')}>
+                        Tilbage
+                    </BackButton>
                     {user && <DeleteButton onClick={() => removeImage(image)}>Slet billede</DeleteButton>}
                 </ButtonBar>
             </Wrapper>

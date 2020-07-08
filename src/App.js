@@ -1,9 +1,10 @@
 import React, { useState, useEffect, createContext } from 'react';
 import { BrowserRouter as Router, Route, Switch, Redirect } from 'react-router-dom';
 import styled from 'styled-components';
-import uuid from 'uuid/v4';
-import firebase from 'firebase';
+import { v4 as uuidv4 } from 'uuid';
+import firebase from 'firebase/app';
 import 'firebase/auth';
+import 'firebase/storage';
 import StyledFirebaseAuth from 'react-firebaseui/StyledFirebaseAuth';
 import 'firebase/firestore';
 import Gallery from './Gallery';
@@ -15,15 +16,15 @@ const LoggedInBar = styled.div`
     align-items: center;
     padding: 10px;
     background: #999;
-`
+`;
 
 const config = {
-    apiKey: 'AIzaSyDHmbdXOUwR8oEHREt-Qc1Pwe6CQYrcQx0',
-    authDomain: 'necgallery-9b4b2.firebaseapp.com',
-    databaseURL: 'https://necgallery-9b4b2.firebaseio.com',
-    projectId: 'necgallery-9b4b2',
-    storageBucket: 'necgallery-9b4b2.appspot.com',
-    messagingSenderId: '534201773677'
+    apiKey: 'xxx',
+    authDomain: 'xxx',
+    databaseURL: 'xxx',
+    projectId: 'xxx',
+    storageBucket: 'xxx',
+    messagingSenderId: 'xxx',
 };
 
 firebase.initializeApp(config);
@@ -35,10 +36,11 @@ const storageRef = storage.ref();
 export const AppContext = createContext();
 
 function upload(images, setUploadProgress) {
+    console.log(images);
     return Promise.all(
-        images.map(image => {
+        images.map((image) => {
             return new Promise((resolve, reject) => {
-                const id = uuid();
+                const id = uuidv4();
 
                 const imageRef = storageRef.child(`gallery/${id}/original.jpg`);
                 const uploadTask = imageRef.put(image);
@@ -47,15 +49,15 @@ function upload(images, setUploadProgress) {
                     setUploadProgress(progress);
                 });
                 uploadTask
-                    .then(snapshot => {
+                    .then((snapshot) => {
                         resolve({ ...snapshot, id });
                     })
-                    .catch(err => {
+                    .catch((err) => {
                         reject(new Error(err.message_));
                     });
             });
         })
-    ).catch(err => {
+    ).catch((err) => {
         alert(err);
     });
 }
@@ -80,8 +82,10 @@ function App() {
     function onDropHandler(event) {
         event.preventDefault();
 
+        console.log('onDrop');
+
         const {
-            dataTransfer: { files = {} }
+            dataTransfer: { files = {} },
         } = event;
 
         const images = Object.values(files).reduce((acc, file) => {
@@ -99,16 +103,16 @@ function App() {
         }
 
         const { id, downloadUrls } = image;
-        const keys = downloadUrls.map(obj => {
+        const keys = downloadUrls.map((obj) => {
             const [key] = Object.keys(obj);
             return key;
         });
-        Promise.all([keys.map(key => deleteImageRef(`gallery/${id}/${key}.jpg`)), deleteDocRef(id)])
-            .then(function() {
+        Promise.all([keys.map((key) => deleteImageRef(`gallery/${id}/${key}.jpg`)), deleteDocRef(id)])
+            .then(function () {
                 console.log('successfully deleted images');
                 // File deleted successfully
             })
-            .catch(function(error) {
+            .catch(function (error) {
                 console.log(error);
                 // Uh-oh, an error occurred!
             });
@@ -116,12 +120,12 @@ function App() {
 
     async function signOut() {
         await firebase.auth().signOut();
-        setUser(false)
+        setUser(false);
     }
 
     // Check login status
     useEffect(() => {
-        const unregisterAuthObserver = firebase.auth().onAuthStateChanged(function(user) {
+        const unregisterAuthObserver = firebase.auth().onAuthStateChanged(function (user) {
             if (user) {
                 setUser(user);
             }
@@ -133,12 +137,13 @@ function App() {
     }, []);
 
     useEffect(() => {
-        galleryCollection.onSnapshot(function(querySnapshot) {
+        galleryCollection.onSnapshot(function (querySnapshot) {
             const imagesFromDb = [];
-            querySnapshot.forEach(function(doc) {
+            querySnapshot.forEach(function (doc) {
                 const id = doc.id;
                 const data = doc.data();
                 imagesFromDb.push({ id, ...data });
+                console.log(data);
             });
             setImages(imagesFromDb);
         });
@@ -149,21 +154,26 @@ function App() {
 
     return (
         <AppContext.Provider value={{ user }}>
-            {user && (<LoggedInBar><span>Hej {user.displayName}</span><button onClick={signOut}>Log ud</button></LoggedInBar>)}
+            {user && (
+                <LoggedInBar>
+                    <span>Hej {user.displayName}</span>
+                    <button onClick={signOut}>Log ud</button>
+                </LoggedInBar>
+            )}
             <Router>
                 <Switch>
                     <Route
                         exact
                         path="/"
-                        render={props => <Gallery {...props} images={images} uploadProgress={uploadProgress} />}
+                        render={(props) => <Gallery {...props} images={images} uploadProgress={uploadProgress} />}
                     />
                     <Route
                         exact
                         path="/image/:id"
-                        render={props => {
+                        render={(props) => {
                             if (images.length) {
                                 const id = props.match.params.id;
-                                const image = images.find(image => image.id === id);
+                                const image = images.find((image) => image.id === id);
                                 return image ? (
                                     <ImageDetails {...props} image={image} removeImage={removeImage} />
                                 ) : (
@@ -181,7 +191,7 @@ function App() {
                                     uiConfig={{
                                         signInFlow: 'popup',
                                         signInSuccessUrl: '/',
-                                        signInOptions: [firebase.auth.FacebookAuthProvider.PROVIDER_ID]
+                                        signInOptions: [firebase.auth.FacebookAuthProvider.PROVIDER_ID],
                                     }}
                                     firebaseAuth={firebase.auth()}
                                 />
