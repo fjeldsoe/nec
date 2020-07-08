@@ -1,11 +1,19 @@
 {
-  "main.js": "/nec/static/js/main.30c89d11.chunk.js",
-  "main.js.map": "/nec/static/js/main.30c89d11.chunk.js.map",
-  "runtime~main.js": "/nec/static/js/runtime~main.189327a1.js",
-  "runtime~main.js.map": "/nec/static/js/runtime~main.189327a1.js.map",
-  "static/js/2.9ba19282.chunk.js": "/nec/static/js/2.9ba19282.chunk.js",
-  "static/js/2.9ba19282.chunk.js.map": "/nec/static/js/2.9ba19282.chunk.js.map",
-  "index.html": "/nec/index.html",
-  "precache-manifest.a7de9c3366f36873b50d29efd83f1c4d.js": "/nec/precache-manifest.a7de9c3366f36873b50d29efd83f1c4d.js",
-  "service-worker.js": "/nec/service-worker.js"
+  "files": {
+    "main.js": "/nec/static/js/main.3ac9ce08.chunk.js",
+    "main.js.map": "/nec/static/js/main.3ac9ce08.chunk.js.map",
+    "runtime-main.js": "/nec/static/js/runtime-main.894c98f8.js",
+    "runtime-main.js.map": "/nec/static/js/runtime-main.894c98f8.js.map",
+    "static/js/2.a24b0949.chunk.js": "/nec/static/js/2.a24b0949.chunk.js",
+    "static/js/2.a24b0949.chunk.js.map": "/nec/static/js/2.a24b0949.chunk.js.map",
+    "index.html": "/nec/index.html",
+    "precache-manifest.be1ff7ab957f825929e70455b8db9268.js": "/nec/precache-manifest.be1ff7ab957f825929e70455b8db9268.js",
+    "service-worker.js": "/nec/service-worker.js",
+    "static/js/2.a24b0949.chunk.js.LICENSE.txt": "/nec/static/js/2.a24b0949.chunk.js.LICENSE.txt"
+  },
+  "entrypoints": [
+    "static/js/runtime-main.894c98f8.js",
+    "static/js/2.a24b0949.chunk.js",
+    "static/js/main.3ac9ce08.chunk.js"
+  ]
 }
