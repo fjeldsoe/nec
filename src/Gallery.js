@@ -3,6 +3,7 @@ import styled from 'styled-components';
 import { Link } from 'react-router-dom';
 import Image from './Image';
 import breakpoints, { breakpointUp } from './breakpoints';
+import { SortableContainer, SortableElement } from 'react-sortable-hoc';
 
 const Wrapper = styled.div`
     display: flex;
@@ -10,7 +11,9 @@ const Wrapper = styled.div`
     padding: 5px;
 `;
 
-const ImageLink = styled(Link)`
+const SortableWrapper = SortableContainer((props) => <Wrapper {...props} />);
+
+const Item = styled.div`
     flex: 0 0 auto;
     width: calc(50%);
     max-height: 300px;
@@ -29,6 +32,8 @@ const ImageLink = styled(Link)`
         width: calc(20%);
     }
 `;
+
+const SortableItem = SortableElement((props) => <Item {...props} />);
 
 const Thumb = styled(Image)`
     width: 100%;
@@ -56,27 +61,28 @@ const UploadIndicator = styled.div`
     }
 `;
 
-function App(props) {
-    const { images, uploadProgress } = props;
+function Gallery(props) {
+    const { images, uploadProgress, handleSortEnd, shouldCancelStart } = props;
 
     return (
         <>
             <UploadIndicator uploadProgress={uploadProgress} />
-            <Wrapper>
+            <SortableWrapper axis="xy" pressDelay={500} onSortEnd={handleSortEnd} shouldCancelStart={shouldCancelStart}>
                 {images.length
-                    ? images.map((image) => (
-                          <ImageLink to={`/image/${image.id}`} key={image.id}>
-                              <Thumb
-                                  key={image.id}
-                                  image={image}
-                                  sizes={`50vw, (min-width: ${breakpoints.sm}px) 33.3vw, (min-width: ${breakpoints.md}px) 25vw, (min-width: ${breakpoints.lg}px) 20vw`}
-                              />
-                          </ImageLink>
+                    ? images.map((image, index) => (
+                          <SortableItem index={index} key={image.id} data-order={image.order}>
+                              <Link to={`/nec/image/${image.id}`}>
+                                  <Thumb
+                                      image={image}
+                                      sizes={`50vw, (min-width: ${breakpoints.sm}px) 33.3vw, (min-width: ${breakpoints.md}px) 25vw, (min-width: ${breakpoints.lg}px) 20vw`}
+                                  />
+                              </Link>
+                          </SortableItem>
                       ))
                     : null}
-            </Wrapper>
+            </SortableWrapper>
         </>
     );
 }
 
-export default App;
+export default Gallery;

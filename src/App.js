@@ -9,6 +9,7 @@ import StyledFirebaseAuth from 'react-firebaseui/StyledFirebaseAuth';
 import 'firebase/firestore';
 import Gallery from './Gallery';
 import ImageDetails from './ImageDetails';
+import arrayMove from 'array-move';
 
 const LoggedInBar = styled.div`
     display: flex;
@@ -19,12 +20,12 @@ const LoggedInBar = styled.div`
 `;
 
 const config = {
-    apiKey: 'xxx',
-    authDomain: 'xxx',
-    databaseURL: 'xxx',
-    projectId: 'xxx',
-    storageBucket: 'xxx',
-    messagingSenderId: 'xxx',
+    apiKey: 'AIzaSyBPG6_rLNCqJKQaQxRxoL9kiNRrst_SGng',
+    authDomain: 'necgallery-9b4b2.firebaseapp.com',
+    databaseURL: 'https://necgallery-9b4b2.firebaseio.com',
+    projectId: 'necgallery-9b4b2',
+    storageBucket: 'necgallery-9b4b2.appspot.com',
+    messagingSenderId: '534201773677',
 };
 
 firebase.initializeApp(config);
@@ -36,7 +37,6 @@ const storageRef = storage.ref();
 export const AppContext = createContext();
 
 function upload(images, setUploadProgress) {
-    console.log(images);
     return Promise.all(
         images.map((image) => {
             return new Promise((resolve, reject) => {
@@ -82,8 +82,6 @@ function App() {
     function onDropHandler(event) {
         event.preventDefault();
 
-        console.log('onDrop');
-
         const {
             dataTransfer: { files = {} },
         } = event;
@@ -93,6 +91,14 @@ function App() {
         }, []);
 
         upload(images, setUploadProgress);
+    }
+
+    function shouldCancelStart() {
+        return user !== false ? false : true;
+    }
+
+    function handleSortEnd({ oldIndex, newIndex }) {
+        setImages((imagesArray) => arrayMove(imagesArray, oldIndex, newIndex));
     }
 
     function removeImage(image) {
@@ -137,20 +143,60 @@ function App() {
     }, []);
 
     useEffect(() => {
-        galleryCollection.onSnapshot(function (querySnapshot) {
-            const imagesFromDb = [];
-            querySnapshot.forEach(function (doc) {
+        galleryCollection
+            .orderBy('order')
+            .get()
+            .then((querySnapshot) => {
+                const imagesFromDb = [];
+
+                querySnapshot.forEach((doc) => {
+                    const id = doc.id;
+                    const data = doc.data();
+                    imagesFromDb.push({ id, ...data });
+                });
+
+                setImages(imagesFromDb);
+            });
+
+        galleryCollection.onSnapshot((querySnapshot) => {
+            const test = [];
+
+            querySnapshot.forEach((doc) => {
                 const id = doc.id;
                 const data = doc.data();
-                imagesFromDb.push({ id, ...data });
-                console.log(data);
+                test.push({ id, ...data });
             });
-            setImages(imagesFromDb);
+
+            const maxSortOrder = Math.max(...test.map(({ order }) => order));
+            const notOrdered = test.find(({ order }) => order === -1);
+
+            if (notOrdered) {
+                setImages((imagesArray) => [...imagesArray, { ...notOrdered, order: maxSortOrder + 1 }]);
+            }
         });
 
         document.addEventListener('drop', onDropHandler);
         document.addEventListener('dragover', onDragoverHandler);
+
+        return () => {
+            document.removeEventListener('drop', onDropHandler);
+            document.removeEventListener('dragover', onDragoverHandler);
+        };
     }, []);
+
+    useEffect(() => {
+        if (user) {
+            const batch = db.batch();
+            Object.entries(images).forEach(([key, val]) => {
+                const { id } = val;
+                const docRef = galleryCollection.doc(id);
+                batch.update(docRef, { order: parseInt(key) });
+            });
+            batch.commit().then(() => {
+                console.log('committed batch');
+            });
+        }
+    }, [user, images]);
 
     return (
         <AppContext.Provider value={{ user }}>
@@ -164,12 +210,20 @@ function App() {
                 <Switch>
                     <Route
                         exact
-                        path="/"
-                        render={(props) => <Gallery {...props} images={images} uploadProgress={uploadProgress} />}
+                        path="/nec"
+                        render={(props) => (
+                            <Gallery
+                                {...props}
+                                images={images}
+                                uploadProgress={uploadProgress}
+                                handleSortEnd={handleSortEnd}
+                                shouldCancelStart={shouldCancelStart}
+                            />
+                        )}
                     />
                     <Route
                         exact
-                        path="/image/:id"
+                        path="/nec/image/:id"
                         render={(props) => {
                             if (images.length) {
                                 const id = props.match.params.id;
@@ -177,29 +231,30 @@ function App() {
                                 return image ? (
                                     <ImageDetails {...props} image={image} removeImage={removeImage} />
                                 ) : (
-                                    <Redirect to="/" />
+                                    <Redirect to="/nec" />
                                 );
                             }
                         }}
                     />
                     <Route
                         exact
-                        path="/login"
+                        path="/nec/login"
                         render={() =>
                             user === false ? (
                                 <StyledFirebaseAuth
                                     uiConfig={{
                                         signInFlow: 'popup',
-                                        signInSuccessUrl: '/',
+                                        signInSuccessUrl: '/nec',
                                         signInOptions: [firebase.auth.FacebookAuthProvider.PROVIDER_ID],
                                     }}
                                     firebaseAuth={firebase.auth()}
                                 />
                             ) : (
-                                <Redirect to="/" />
+                                <Redirect to="/nec" />
                             )
                         }
                     />
+                    <Redirect to="/nec" />
                 </Switch>
             </Router>
         </AppContext.Provider>

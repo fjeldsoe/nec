@@ -25,9 +25,8 @@ exports.optimizeImages = functions
     .runWith(runtimeOpts)
     .storage.object()
     .onFinalize(async (data) => {
-        console.log(data);
         // Exit if this is triggered on a file that is not an image.
-        if (!data && !data.contentType.startsWith('image/')) {
+        if (data && !data.contentType.startsWith('image/')) {
             console.log('This is not an image.');
             return false;
         }
@@ -79,7 +78,6 @@ exports.optimizeImages = functions
 
         await Promise.all([mkdirp(tempWorkingDir), file.download({ destination: tempSourceFile })]);
 
-        console.log(file, tempSourceFile);
         const sizes = ['400x400>', '600x600>', '800x800>', '1000x1000>', '2000x2000>'];
 
         const [...urls] = await Promise.all(
@@ -108,13 +106,8 @@ exports.optimizeImages = functions
                             },
                         },
                     });
-                    file.getSignedUrl({ action: 'read', expires: '01-01-2100' }, (err, url) => {
-                        if (err) {
-                            console.log(err);
-                            return;
-                        }
-                        resolve({ [size.split('>')[0]]: url });
-                    });
+                    await file.makePublic();
+                    resolve({ [size.split('>')[0]]: file.metadata.mediaLink });
                 });
             })
         );
@@ -126,6 +119,7 @@ exports.optimizeImages = functions
             .doc(id)
             .set({
                 downloadUrls: urls,
+                order: -1,
                 metadata: { ...metadata, visionData },
             });
 
