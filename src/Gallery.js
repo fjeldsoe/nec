@@ -61,8 +61,26 @@ const UploadIndicator = styled.div`
     }
 `;
 
+const FooterBar = styled.div`
+    margin: auto 10px 10px;
+    border-radius: 5px;
+    padding: 10px;
+    font-size: 12px;
+    background: #333;
+    color: #999;
+`;
+
+const EmailButton = styled.button`
+    background: none;
+    border: 0;
+`;
+
 function Gallery(props) {
     const { images, uploadProgress, handleSortEnd, shouldCancelStart } = props;
+
+    function handleEmailClick() {
+        window.open('mailto:nechristiansen@gmail.com', '_blank');
+    }
 
     return (
         <>
@@ -81,6 +99,9 @@ function Gallery(props) {
                       ))
                     : null}
             </SortableWrapper>
+            <FooterBar>
+                &copy; Niels Erik Christiansen, <EmailButton onClick={handleEmailClick}>@ Email</EmailButton>
+            </FooterBar>
         </>
     );
 }

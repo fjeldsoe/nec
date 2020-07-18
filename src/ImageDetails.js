@@ -1,53 +1,81 @@
-import React, { useContext } from 'react';
-import styled from 'styled-components';
+import React, { useContext, useState, useEffect } from 'react';
+import styled, { createGlobalStyle } from 'styled-components';
 import Image from './Image';
 import { AppContext } from './App';
 import { getLuminance, getContrast } from 'polished';
 import tinygradient from 'tinygradient';
+import { EditorState, convertFromRaw, convertToRaw } from 'draft-js';
+import { Editor } from 'react-draft-wysiwyg';
+import 'react-draft-wysiwyg/dist/react-draft-wysiwyg.css';
+import { stateToHTML } from 'draft-js-export-html';
+
+const GlobalStyles = createGlobalStyle`
+    body {
+        &:before {
+            content: '';
+            position: absolute;
+            top: 0;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background-image: ${(props) => props.gradient};
+            filter: blur(100px);
+        }
+    }
+
+    .editorWrapper {
+        color: black;
+        margin-bottom: 5px;
+    }
+
+    .editorTextField {
+        height: auto;
+        padding: 10px;
+        background: white;
+    }
+`;
 
 const Wrapper = styled.div`
-    height: 100%;
+    position: relative;
     display: flex;
     flex-direction: column;
+    max-width: 90%;
+    margin: 0 auto;
+`;
+
+const Background = styled.div`
+    background-color: rgba(0, 0, 0, 0.2);
+    border-bottom-left-radius: 5px;
+    border-bottom-right-radius: 5px;
 `;
 
 const ImageWrapper = styled.div`
     position: relative;
     flex: 1 0 auto;
-    max-height: 100%;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    min-height: 1px;
-
-    &:before {
-        content: '';
-        position: absolute;
-        top: 0;
-        bottom: 0;
-        left: 0;
-        right: 0;
-        background: ${(props) => props.gradient};
-        filter: blur(100px);
-    }
 `;
 
 const DetailedImage = styled(Image)`
-    max-width: 90%;
-    max-height: 90%;
-    object-fit: contain;
+    flex: none;
+    display: block;
+    max-height: calc(100vh - 20px);
+    margin: 10px auto;
     filter: drop-shadow(0px 20px 20px rgba(0, 0, 0, 0.5));
 `;
 
+const Description = styled.div`
+    flex: 1 1 auto;
+    min-width: 1px;
+    padding: 10px 20px;
+`;
+
 const ButtonBar = styled.div`
+    position: relative;
     flex: none;
     display: flex;
-    width: 90%;
-    max-width: 600px;
+    width: 100%;
     height: 60px;
-    margin: 20px auto;
+    margin: 20px 0;
     box-shadow: 0 5px 10px rgba(0, 0, 0, 0.2);
-    border-top: 1px solid rgba(0, 0, 0, 0.2);
 `;
 
 const Button = styled.button`
@@ -66,10 +94,22 @@ const DeleteButton = styled(Button)`
     background: linear-gradient(0deg, rgba(162, 0, 0, 1) 0%, rgba(218, 0, 0, 1) 100%);
 `;
 
+const EditorWrappper = styled.div`
+    margin: 0 auto;
+`;
+
+const SaveButton = styled.button`
+    background: orange;
+    border: none;
+    width: 100%;
+    height: 40px;
+    font-weight: bold;
+`;
+
 export default (props) => {
-    const { history, image, removeImage } = props;
+    const { history, image, removeImage, updateDescription } = props;
+    const { description } = image;
     const { colors } = image.metadata.visionData;
-    console.log(colors);
     const [primaryColor, secondaryColor] = colors
         .sort((a, b) => b.score - a.score)
         .reduce((acc, curr, index) => {
@@ -83,14 +123,48 @@ export default (props) => {
     const { user } = useContext(AppContext);
     const gradient = tinygradient(colors.map(({ color: { red, green, blue } }) => `rgb(${red},${green},${blue})`));
     const [fontColor] = ['#000', '#FFF'].sort((a, b) => getContrast(outerColor, b) - getContrast(outerColor, a));
+    const [editorState, setEditorState] = useState(
+        description ? EditorState.createWithContent(convertFromRaw(description)) : EditorState.createEmpty()
+    );
+    const [unsavedChanges, setUnsavedChanges] = useState(false);
+
+    function saveDescription() {
+        const { id } = image;
+        const description = convertToRaw(editorState.getCurrentContent());
+        updateDescription({ id, description });
+        setUnsavedChanges(false);
+    }
+
+    useEffect(() => {
+        setUnsavedChanges(true);
+    }, [editorState]);
 
     return (
         <>
+            <GlobalStyles gradient={gradient.css('radial')} />
             <Wrapper>
-                <ImageWrapper gradient={gradient.css('radial')}>
-                    <DetailedImage image={{ ...image }} sizes="90vw" />
-                </ImageWrapper>
-                <div>lksjdf lksdjf ldskfj lsdkfj sldkfj sdlkf jslk fjl</div>
+                <Background>
+                    <ImageWrapper>
+                        <DetailedImage image={{ ...image }} sizes="90vw" />
+                    </ImageWrapper>
+                    <Description>
+                        {user && (
+                            <EditorWrappper>
+                                <Editor
+                                    editorState={editorState}
+                                    onEditorStateChange={setEditorState}
+                                    toolbarClassName="editorToolbar"
+                                    wrapperClassName="editorWrapper"
+                                    editorClassName="editorTextField"
+                                />
+                                {unsavedChanges && <SaveButton onClick={saveDescription}>Gem beskrivelse</SaveButton>}
+                            </EditorWrappper>
+                        )}
+                        {!user && description && (
+                            <div dangerouslySetInnerHTML={{ __html: stateToHTML(convertFromRaw(description)) }}></div>
+                        )}
+                    </Description>
+                </Background>
                 <ButtonBar>
                     <BackButton backgroundColor={outerColor} fontColor={fontColor} onClick={() => history.push('/nec')}>
                         Tilbage

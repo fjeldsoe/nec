@@ -12,11 +12,12 @@ import ImageDetails from './ImageDetails';
 import arrayMove from 'array-move';
 
 const LoggedInBar = styled.div`
+    position: relative;
     display: flex;
     justify-content: space-between;
     align-items: center;
     padding: 10px;
-    background: #999;
+    background: #333;
 `;
 
 const config = {
@@ -62,6 +63,10 @@ function upload(images, setUploadProgress) {
     });
 }
 
+function updateDescription({ id, description }) {
+    galleryCollection.doc(id).update({ description });
+}
+
 function onDragoverHandler(event) {
     event.preventDefault();
 }
@@ -101,6 +106,15 @@ function App() {
         setImages((imagesArray) => arrayMove(imagesArray, oldIndex, newIndex));
     }
 
+    function getImagesFromDb() {
+        galleryCollection
+            .orderBy('order')
+            .get()
+            .then((querySnapshot) => {
+                setImages(imagesFromDBArray(querySnapshot));
+            });
+    }
+
     function removeImage(image) {
         const sure = window.confirm('Er du sikker på du vil slette billedet?');
 
@@ -115,12 +129,13 @@ function App() {
         });
         Promise.all([keys.map((key) => deleteImageRef(`gallery/${id}/${key}.jpg`)), deleteDocRef(id)])
             .then(function () {
-                console.log('successfully deleted images');
                 // File deleted successfully
+                console.log('successfully deleted images');
+                getImagesFromDb();
             })
             .catch(function (error) {
-                console.log(error);
                 // Uh-oh, an error occurred!
+                console.log(error);
             });
     }
 
@@ -142,33 +157,26 @@ function App() {
         };
     }, []);
 
+    function imagesFromDBArray(querySnapshot) {
+        const imagesFromDb = [];
+
+        querySnapshot.forEach((doc) => {
+            const id = doc.id;
+            const data = doc.data();
+            imagesFromDb.push({ id, ...data });
+        });
+
+        return imagesFromDb;
+    }
+
     useEffect(() => {
-        galleryCollection
-            .orderBy('order')
-            .get()
-            .then((querySnapshot) => {
-                const imagesFromDb = [];
-
-                querySnapshot.forEach((doc) => {
-                    const id = doc.id;
-                    const data = doc.data();
-                    imagesFromDb.push({ id, ...data });
-                });
-
-                setImages(imagesFromDb);
-            });
+        getImagesFromDb();
 
         galleryCollection.onSnapshot((querySnapshot) => {
-            const test = [];
+            const fromDB = imagesFromDBArray(querySnapshot);
 
-            querySnapshot.forEach((doc) => {
-                const id = doc.id;
-                const data = doc.data();
-                test.push({ id, ...data });
-            });
-
-            const maxSortOrder = Math.max(...test.map(({ order }) => order));
-            const notOrdered = test.find(({ order }) => order === -1);
+            const maxSortOrder = Math.max(...fromDB.map(({ order }) => order));
+            const notOrdered = fromDB.find(({ order }) => order === -1);
 
             if (notOrdered) {
                 setImages((imagesArray) => [...imagesArray, { ...notOrdered, order: maxSortOrder + 1 }]);
@@ -229,7 +237,13 @@ function App() {
                                 const id = props.match.params.id;
                                 const image = images.find((image) => image.id === id);
                                 return image ? (
-                                    <ImageDetails {...props} image={image} removeImage={removeImage} />
+                                    <ImageDetails
+                                        {...props}
+                                        image={image}
+                                        removeImage={removeImage}
+                                        updateDescription={updateDescription}
+                                        user={user}
+                                    />
                                 ) : (
                                     <Redirect to="/nec" />
                                 );
