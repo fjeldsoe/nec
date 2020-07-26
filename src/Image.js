@@ -1,5 +1,5 @@
 import React from 'react';
-import styled from 'styled-components';
+import styled from 'styled-components/macro';
 
 const Image = styled.img`
     width: auto;
@@ -8,11 +8,11 @@ const Image = styled.img`
     max-height: 100%;
 `;
 
-export default props => {
+export default (props) => {
     const { image, className, sizes } = props;
 
-    const srcsetStrings = image =>
-        image.downloadUrls.map(obj => {
+    const srcsetStrings = (image) =>
+        image.downloadUrls.map((obj) => {
             const [key, url] = Object.entries(obj)[0];
             const width = key.split('x')[0];
             return `${url} ${width}w`;

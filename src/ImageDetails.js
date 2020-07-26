@@ -1,5 +1,5 @@
 import React, { useContext, useState, useEffect } from 'react';
-import styled, { createGlobalStyle } from 'styled-components';
+import styled, { createGlobalStyle } from 'styled-components/macro';
 import Image from './Image';
 import { AppContext } from './App';
 import { getLuminance, getContrast } from 'polished';
@@ -39,27 +39,32 @@ const Wrapper = styled.div`
     position: relative;
     display: flex;
     flex-direction: column;
-    max-width: 90%;
     margin: 0 auto;
+    padding-bottom: 40px;
 `;
 
 const Background = styled.div`
-    background-color: rgba(0, 0, 0, 0.2);
+    /* background-color: rgba(0, 0, 0, 0.2); */
+    background: rgb(0, 0, 0);
+    background: linear-gradient(0deg, rgba(0, 0, 0, 0.20211834733893552) 0%, rgba(0, 0, 0, 0) 100%);
     border-bottom-left-radius: 5px;
     border-bottom-right-radius: 5px;
+    margin-bottom: 20px;
 `;
 
 const ImageWrapper = styled.div`
     position: relative;
     flex: 1 0 auto;
+    padding: 10px;
 `;
 
 const DetailedImage = styled(Image)`
     flex: none;
     display: block;
-    max-height: calc(100vh - 20px);
-    margin: 10px auto;
+    height: calc(100vh - 20px);
+    margin: 0 auto;
     filter: drop-shadow(0px 20px 20px rgba(0, 0, 0, 0.5));
+    object-fit: contain;
 `;
 
 const Description = styled.div`
@@ -72,9 +77,8 @@ const ButtonBar = styled.div`
     position: relative;
     flex: none;
     display: flex;
-    width: 100%;
     height: 60px;
-    margin: 20px 0;
+    margin: auto 20px;
     box-shadow: 0 5px 10px rgba(0, 0, 0, 0.2);
 `;
 
@@ -145,7 +149,7 @@ export default (props) => {
             <Wrapper>
                 <Background>
                     <ImageWrapper>
-                        <DetailedImage image={{ ...image }} sizes="90vw" />
+                        <DetailedImage image={{ ...image }} />
                     </ImageWrapper>
                     <Description>
                         {user && (

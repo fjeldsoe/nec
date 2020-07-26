@@ -1,11 +1,11 @@
 import React, { useState, useEffect, createContext } from 'react';
-import { BrowserRouter as Router, Route, Switch, Redirect } from 'react-router-dom';
-import styled from 'styled-components';
+import { BrowserRouter as Router, Route, Switch, Redirect, Link } from 'react-router-dom';
+import styled from 'styled-components/macro';
 import { v4 as uuidv4 } from 'uuid';
 import firebase from 'firebase/app';
 import 'firebase/auth';
 import 'firebase/storage';
-import StyledFirebaseAuth from 'react-firebaseui/StyledFirebaseAuth';
+// import StyledFirebaseAuth from 'react-firebaseui/StyledFirebaseAuth';
 import 'firebase/firestore';
 import Gallery from './Gallery';
 import ImageDetails from './ImageDetails';
@@ -18,6 +18,37 @@ const LoggedInBar = styled.div`
     align-items: center;
     padding: 10px;
     background: #333;
+`;
+
+const LoginForm = styled.form`
+    width: 100%;
+    max-width: 500px;
+    padding: 20px;
+    margin: 0 auto;
+`;
+
+const FormInput = styled.input`
+    display: block;
+    width: 100%;
+    height: 40px;
+    padding: 10px;
+    margin-bottom: 10px;
+    border: 1px solid #999;
+    background: #fff;
+`;
+
+const LoginButton = styled.button`
+    width: 100%;
+    height: 40px;
+`;
+
+const StyledLink = styled(Link)`
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 40px;
+    margin-top: 20px;
+    color: #fff;
 `;
 
 const config = {
@@ -63,10 +94,6 @@ function upload(images, setUploadProgress) {
     });
 }
 
-function updateDescription({ id, description }) {
-    galleryCollection.doc(id).update({ description });
-}
-
 function onDragoverHandler(event) {
     event.preventDefault();
 }
@@ -83,6 +110,8 @@ function App() {
     const [images, setImages] = useState([]);
     const [user, setUser] = useState(false);
     const [uploadProgress, setUploadProgress] = useState(0);
+    const [email, setEmail] = useState('');
+    const [password, setPassword] = useState('');
 
     function onDropHandler(event) {
         event.preventDefault();
@@ -115,6 +144,11 @@ function App() {
             });
     }
 
+    function updateDescription({ id, description }) {
+        galleryCollection.doc(id).update({ description });
+        getImagesFromDb();
+    }
+
     function removeImage(image) {
         const sure = window.confirm('Er du sikker på du vil slette billedet?');
 
@@ -136,6 +170,20 @@ function App() {
             .catch(function (error) {
                 // Uh-oh, an error occurred!
                 console.log(error);
+            });
+    }
+
+    function signIn(event) {
+        event.preventDefault();
+
+        firebase
+            .auth()
+            .signInWithEmailAndPassword(email, password)
+            .catch(function (error) {
+                const errorCode = error.code;
+                const errorMessage = error.message;
+
+                alert(errorMessage);
             });
     }
 
@@ -206,12 +254,13 @@ function App() {
         }
     }, [user, images]);
 
+    console.log(user);
+
     return (
         <AppContext.Provider value={{ user }}>
             {user && (
                 <LoggedInBar>
-                    <span>Hej {user.displayName}</span>
-                    <button onClick={signOut}>Log ud</button>
+                    <span>Du er logget ind</span>
                 </LoggedInBar>
             )}
             <Router>
@@ -223,10 +272,12 @@ function App() {
                             <Gallery
                                 {...props}
                                 images={images}
+                                user={user}
+                                signOut={signOut}
                                 uploadProgress={uploadProgress}
                                 handleSortEnd={handleSortEnd}
                                 shouldCancelStart={shouldCancelStart}
-                            />
+                            ></Gallery>
                         )}
                     />
                     <Route
@@ -255,15 +306,31 @@ function App() {
                         path="/nec/login"
                         render={() =>
                             user === false ? (
-                                <StyledFirebaseAuth
-                                    uiConfig={{
-                                        signInFlow: 'popup',
-                                        signInSuccessUrl: '/nec',
-                                        signInOptions: [firebase.auth.FacebookAuthProvider.PROVIDER_ID],
-                                    }}
-                                    firebaseAuth={firebase.auth()}
-                                />
+                                <LoginForm onSubmit={signIn}>
+                                    <FormInput
+                                        type="text"
+                                        placeholder="Email"
+                                        value={email}
+                                        onChange={(event) => setEmail(event.target.value)}
+                                    />
+                                    <FormInput
+                                        type="password"
+                                        placeholder="Password"
+                                        value={password}
+                                        onChange={(event) => setPassword(event.target.value)}
+                                    />
+                                    <LoginButton>Log ind</LoginButton>
+                                    <StyledLink to="/nec">Tilbage</StyledLink>
+                                </LoginForm>
                             ) : (
+                                // <StyledFirebaseAuth
+                                //     uiConfig={{
+                                //         signInFlow: 'popup',
+                                //         signInSuccessUrl: '/nec',
+                                //         signInOptions: [firebase.auth.FacebookAuthProvider.PROVIDER_ID],
+                                //     }}
+                                //     firebaseAuth={firebase.auth()}
+                                // />
                                 <Redirect to="/nec" />
                             )
                         }

@@ -1,11 +1,13 @@
 import React from 'react';
-import styled from 'styled-components';
+import styled from 'styled-components/macro';
 import { Link } from 'react-router-dom';
 import Image from './Image';
 import breakpoints, { breakpointUp } from './breakpoints';
 import { SortableContainer, SortableElement } from 'react-sortable-hoc';
+import { useHistory } from 'react-router-dom';
 
 const Wrapper = styled.div`
+    flex: 1 0 auto;
     display: flex;
     flex-wrap: wrap;
     padding: 5px;
@@ -16,7 +18,6 @@ const SortableWrapper = SortableContainer((props) => <Wrapper {...props} />);
 const Item = styled.div`
     flex: 0 0 auto;
     width: calc(50%);
-    max-height: 300px;
     padding: 5px;
     overflow: hidden;
 
@@ -73,13 +74,31 @@ const FooterBar = styled.div`
 const EmailButton = styled.button`
     background: none;
     border: 0;
+    padding: 0;
+    margin: 0;
+    color: #999;
+    cursor: pointer;
+`;
+
+const LoginButton = styled.button`
+    padding: 0;
+    margin: 0;
+    background: none;
+    border: 0;
+    color: #999;
+    cursor: pointer;
 `;
 
 function Gallery(props) {
-    const { images, uploadProgress, handleSortEnd, shouldCancelStart } = props;
+    const { images, uploadProgress, handleSortEnd, shouldCancelStart, user, signOut } = props;
+    const history = useHistory();
 
     function handleEmailClick() {
         window.open('mailto:nechristiansen@gmail.com', '_blank');
+    }
+
+    function signIn() {
+        history.push('/nec/login');
     }
 
     return (
@@ -88,7 +107,7 @@ function Gallery(props) {
             <SortableWrapper axis="xy" pressDelay={500} onSortEnd={handleSortEnd} shouldCancelStart={shouldCancelStart}>
                 {images.length
                     ? images.map((image, index) => (
-                          <SortableItem index={index} key={image.id} data-order={image.order}>
+                          <SortableItem index={index} key={image.id}>
                               <Link to={`/nec/image/${image.id}`}>
                                   <Thumb
                                       image={image}
@@ -100,7 +119,11 @@ function Gallery(props) {
                     : null}
             </SortableWrapper>
             <FooterBar>
-                &copy; Niels Erik Christiansen, <EmailButton onClick={handleEmailClick}>@ Email</EmailButton>
+                <span>&copy; Niels Erik Christiansen</span>
+                <span> | </span>
+                <EmailButton onClick={handleEmailClick}>@ Email</EmailButton>
+                <span> | </span>
+                <LoginButton onClick={user ? signOut : signIn}>{user ? 'Log ud' : 'Log ind'}</LoginButton>
             </FooterBar>
         </>
     );
