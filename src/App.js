@@ -5,7 +5,6 @@ import { v4 as uuidv4 } from 'uuid';
 import firebase from 'firebase/app';
 import 'firebase/auth';
 import 'firebase/storage';
-// import StyledFirebaseAuth from 'react-firebaseui/StyledFirebaseAuth';
 import 'firebase/firestore';
 import Gallery from './Gallery';
 import ImageDetails from './ImageDetails';
@@ -51,21 +50,23 @@ const StyledLink = styled(Link)`
     color: #fff;
 `;
 
-const config = {
+const firebaseConfig = {
     apiKey: 'AIzaSyBPG6_rLNCqJKQaQxRxoL9kiNRrst_SGng',
     authDomain: 'necgallery-9b4b2.firebaseapp.com',
     databaseURL: 'https://necgallery-9b4b2.firebaseio.com',
     projectId: 'necgallery-9b4b2',
     storageBucket: 'necgallery-9b4b2.appspot.com',
     messagingSenderId: '534201773677',
+    appId: '1:534201773677:web:57fa8d6f25817e60155964',
 };
 
-firebase.initializeApp(config);
+firebase.initializeApp(firebaseConfig);
 
 const db = firebase.firestore();
 const galleryCollection = db.collection('gallery');
 const storage = firebase.storage();
 const storageRef = storage.ref();
+
 export const AppContext = createContext();
 
 function upload(images, setUploadProgress) {
@@ -323,14 +324,6 @@ function App() {
                                     <StyledLink to="/nec">Tilbage</StyledLink>
                                 </LoginForm>
                             ) : (
-                                // <StyledFirebaseAuth
-                                //     uiConfig={{
-                                //         signInFlow: 'popup',
-                                //         signInSuccessUrl: '/nec',
-                                //         signInOptions: [firebase.auth.FacebookAuthProvider.PROVIDER_ID],
-                                //     }}
-                                //     firebaseAuth={firebase.auth()}
-                                // />
                                 <Redirect to="/nec" />
                             )
                         }

@@ -16,6 +16,7 @@ const Wrapper = styled.div`
 const SortableWrapper = SortableContainer((props) => <Wrapper {...props} />);
 
 const Item = styled.div`
+    content-visibility: auto;
     flex: 0 0 auto;
     width: calc(50%);
     padding: 5px;
@@ -94,17 +95,21 @@ function Gallery(props) {
     const history = useHistory();
 
     function handleEmailClick() {
-        window.open('mailto:nechristiansen@gmail.com', '_blank');
+        const a = 'nechristiansen';
+        const b = 'gmail.com';
+        window.open(`mailto:${a}@${b}`, '_blank');
     }
 
     function signIn() {
         history.push('/nec/login');
     }
 
+    console.log(images);
+
     return (
         <>
             <UploadIndicator uploadProgress={uploadProgress} />
-            <SortableWrapper axis="xy" pressDelay={500} onSortEnd={handleSortEnd} shouldCancelStart={shouldCancelStart}>
+            <SortableWrapper axis="xy" pressDelay={100} onSortEnd={handleSortEnd} shouldCancelStart={shouldCancelStart}>
                 {images.length
                     ? images.map((image, index) => (
                           <SortableItem index={index} key={image.id}>

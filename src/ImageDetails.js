@@ -8,6 +8,7 @@ import { EditorState, convertFromRaw, convertToRaw } from 'draft-js';
 import { Editor } from 'react-draft-wysiwyg';
 import 'react-draft-wysiwyg/dist/react-draft-wysiwyg.css';
 import { stateToHTML } from 'draft-js-export-html';
+import ArrowBackIcon from '@material-ui/icons/ArrowBack';
 
 const GlobalStyles = createGlobalStyle`
     body {
@@ -38,18 +39,56 @@ const GlobalStyles = createGlobalStyle`
 const Wrapper = styled.div`
     position: relative;
     display: flex;
+    flex: 1 1 auto;
     flex-direction: column;
+    width: 100%;
     margin: 0 auto;
-    padding-bottom: 40px;
 `;
 
-const Background = styled.div`
-    /* background-color: rgba(0, 0, 0, 0.2); */
-    background: rgb(0, 0, 0);
-    background: linear-gradient(0deg, rgba(0, 0, 0, 0.20211834733893552) 0%, rgba(0, 0, 0, 0) 100%);
-    border-bottom-left-radius: 5px;
-    border-bottom-right-radius: 5px;
-    margin-bottom: 20px;
+const Overlay = styled.div`
+    position: fixed;
+    top: 10%;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    display: flex;
+    flex-direction: column;
+    background: linear-gradient(0deg, rgba(0, 0, 0, 1) 0%, rgba(0, 0, 0, 0.6) 100%);
+    box-shadow: 0 -10px 20px rgba(0, 0, 0, 0.5);
+    transform: translateY(${({ active }) => (active ? 0 : 'calc(100% - 60px)')});
+    transition: transform 300ms ease;
+`;
+
+const OverlayNav = styled.div`
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    height: 60px;
+`;
+
+const Back = styled.button`
+    display: flex;
+    align-items: center;
+    height: inherit;
+    background: none;
+    border: 0;
+    padding: 0 0 0 20px;
+    color: inherit;
+    font-size: inherit;
+`;
+
+const BackArrow = styled(ArrowBackIcon)`
+    margin-right: 10px;
+`;
+
+const Toggle = styled.button`
+    margin-right: 30px;
+    background: none;
+    border: 0;
+    padding: 0;
+    color: inherit;
+    height: inherit;
+    font-size: inherit;
 `;
 
 const ImageWrapper = styled.div`
@@ -61,36 +100,43 @@ const ImageWrapper = styled.div`
 const DetailedImage = styled(Image)`
     flex: none;
     display: block;
-    height: calc(100vh - 20px);
     margin: 0 auto;
     filter: drop-shadow(0px 20px 20px rgba(0, 0, 0, 0.5));
+    opacity: ${({ fade }) => (fade ? 0.3 : 1)};
+    position: absolute;
+    width: calc(100% - 20px);
+    height: calc(100% - 80px);
     object-fit: contain;
+    transition: opacity 300ms ease;
 `;
 
 const Description = styled.div`
     flex: 1 1 auto;
     min-width: 1px;
     padding: 10px 20px;
+    overflow: auto;
+    -webkit-overflow-scrolling: touch;
+
+    @media (min-width: 375px) {
+        padding: 10px 60px;
+    }
 `;
 
 const ButtonBar = styled.div`
     position: relative;
     flex: none;
     display: flex;
+    justify-content: center;
     height: 60px;
-    margin: auto 20px;
-    box-shadow: 0 5px 10px rgba(0, 0, 0, 0.2);
+    margin: 20px 0;
 `;
 
 const Button = styled.button`
     flex: 1 1 50%;
     font-weight: bold;
     border: 0;
-`;
-
-const BackButton = styled(Button)`
-    background: ${({ backgroundColor }) => backgroundColor};
-    color: ${({ fontColor }) => fontColor};
+    max-width: 300px;
+    box-shadow: 0 5px 10px rgba(0, 0, 0, 0.2);
 `;
 
 const DeleteButton = styled(Button)`
@@ -131,6 +177,7 @@ export default (props) => {
         description ? EditorState.createWithContent(convertFromRaw(description)) : EditorState.createEmpty()
     );
     const [unsavedChanges, setUnsavedChanges] = useState(false);
+    const [isOverlayActive, setIsOverlayActive] = useState(false);
 
     function saveDescription() {
         const { id } = image;
@@ -147,10 +194,18 @@ export default (props) => {
         <>
             <GlobalStyles gradient={gradient.css('radial')} />
             <Wrapper>
-                <Background>
-                    <ImageWrapper>
-                        <DetailedImage image={{ ...image }} />
-                    </ImageWrapper>
+                <ImageWrapper onClick={() => setIsOverlayActive(false)}>
+                    <DetailedImage image={{ ...image }} fade={isOverlayActive} />
+                </ImageWrapper>
+                <Overlay active={isOverlayActive}>
+                    <OverlayNav>
+                        <Back onClick={() => window.history.back()}>
+                            <BackArrow /> Tilbage
+                        </Back>
+                        <Toggle onClick={() => setIsOverlayActive(!isOverlayActive)}>
+                            {isOverlayActive ? 'Skjul' : 'Vis'} beskrivelse
+                        </Toggle>
+                    </OverlayNav>
                     <Description>
                         {user && (
                             <EditorWrappper>
@@ -167,14 +222,11 @@ export default (props) => {
                         {!user && description && (
                             <div dangerouslySetInnerHTML={{ __html: stateToHTML(convertFromRaw(description)) }}></div>
                         )}
+                        <ButtonBar>
+                            {user && <DeleteButton onClick={() => removeImage(image)}>Slet billede</DeleteButton>}
+                        </ButtonBar>
                     </Description>
-                </Background>
-                <ButtonBar>
-                    <BackButton backgroundColor={outerColor} fontColor={fontColor} onClick={() => history.push('/nec')}>
-                        Tilbage
-                    </BackButton>
-                    {user && <DeleteButton onClick={() => removeImage(image)}>Slet billede</DeleteButton>}
-                </ButtonBar>
+                </Overlay>
             </Wrapper>
         </>
     );

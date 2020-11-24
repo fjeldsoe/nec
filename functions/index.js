@@ -22,6 +22,7 @@ const runtimeOpts = {
 
 // // Create and Deploy Your First Cloud Functions
 exports.optimizeImages = functions
+    .region('europe-west1')
     .runWith(runtimeOpts)
     .storage.object()
     .onFinalize(async (data) => {
