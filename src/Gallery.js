@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import styled from 'styled-components/macro';
 import { Link } from 'react-router-dom';
 import Image from './Image';
@@ -11,16 +11,17 @@ const Wrapper = styled.div`
     display: flex;
     flex-wrap: wrap;
     padding: 5px;
+    margin-bottom: 50px;
 `;
 
 const SortableWrapper = SortableContainer((props) => <Wrapper {...props} />);
 
 const Item = styled.div`
-    content-visibility: auto;
     flex: 0 0 auto;
     width: calc(50%);
     padding: 5px;
     overflow: hidden;
+    height: 250px;
 
     ${breakpointUp('sm')} {
         width: calc(33.3%);
@@ -42,6 +43,7 @@ const Thumb = styled(Image)`
     height: 100%;
     object-fit: cover;
     border-radius: 3px;
+    content-visibility: auto;
 `;
 
 const UploadIndicator = styled.div`
@@ -64,12 +66,21 @@ const UploadIndicator = styled.div`
 `;
 
 const FooterBar = styled.div`
-    margin: auto 10px 10px;
-    border-radius: 5px;
+    position: fixed;
+    left: 0;
+    right: 0;
+    bottom: 0px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 50px;
     padding: 10px;
     font-size: 12px;
     background: #333;
     color: #999;
+
+    transform: translateY(${({ hideFooter }) => (hideFooter ? 100 : 0)}%);
+    transition: transform 300ms ease;
 `;
 
 const EmailButton = styled.button`
@@ -93,6 +104,7 @@ const LoginButton = styled.button`
 function Gallery(props) {
     const { images, uploadProgress, handleSortEnd, shouldCancelStart, user, signOut } = props;
     const history = useHistory();
+    const [hideFooter, setHideFooter] = useState(false);
 
     function handleEmailClick() {
         const a = 'nechristiansen';
@@ -104,7 +116,31 @@ function Gallery(props) {
         history.push('/nec/login');
     }
 
-    console.log(images);
+    useEffect(() => {
+        let prevScrollY;
+
+        function scrollHandler(event) {
+            const currentScrollY = window.scrollY;
+
+            if (
+                currentScrollY < 50 ||
+                currentScrollY >= document.documentElement.scrollHeight - window.innerHeight - 50
+            ) {
+                setHideFooter(false);
+                return;
+            }
+
+            setHideFooter(currentScrollY > prevScrollY);
+
+            prevScrollY = window.scrollY;
+        }
+
+        window.addEventListener('scroll', scrollHandler, { passive: true });
+
+        return () => {
+            window.removeEventListener('scroll', scrollHandler);
+        };
+    }, []);
 
     return (
         <>
@@ -123,12 +159,14 @@ function Gallery(props) {
                       ))
                     : null}
             </SortableWrapper>
-            <FooterBar>
-                <span>&copy; Niels Erik Christiansen</span>
-                <span> | </span>
-                <EmailButton onClick={handleEmailClick}>@ Email</EmailButton>
-                <span> | </span>
-                <LoginButton onClick={user ? signOut : signIn}>{user ? 'Log ud' : 'Log ind'}</LoginButton>
+            <FooterBar hideFooter={hideFooter}>
+                <span>
+                    <span>&copy; Niels Erik Christiansen</span>
+                    <span> | </span>
+                    <EmailButton onClick={handleEmailClick}>@ Email</EmailButton>
+                    <span> | </span>
+                    <LoginButton onClick={user ? signOut : signIn}>{user ? 'Log ud' : 'Log ind'}</LoginButton>
+                </span>
             </FooterBar>
         </>
     );

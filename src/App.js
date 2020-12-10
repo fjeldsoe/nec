@@ -255,8 +255,6 @@ function App() {
         }
     }, [user, images]);
 
-    console.log(user);
-
     return (
         <AppContext.Provider value={{ user }}>
             {user && (
