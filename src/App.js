@@ -6,6 +6,7 @@ import firebase from 'firebase/app';
 import 'firebase/auth';
 import 'firebase/storage';
 import 'firebase/firestore';
+import 'firebase/analytics';
 import Gallery from './Gallery';
 import ImageDetails from './ImageDetails';
 import arrayMove from 'array-move';
