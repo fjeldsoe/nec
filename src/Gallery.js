@@ -113,7 +113,7 @@ function Gallery(props) {
     }
 
     function signIn() {
-        history.push('/nec/login');
+        history.push('/login');
     }
 
     useEffect(() => {
@@ -149,7 +149,7 @@ function Gallery(props) {
                 {images.length
                     ? images.map((image, index) => (
                           <SortableItem index={index} key={image.id}>
-                              <Link to={`/nec/image/${image.id}`}>
+                              <Link to={`/image/${image.id}`}>
                                   <Thumb
                                       image={image}
                                       sizes={`50vw, (min-width: ${breakpoints.sm}px) 33.3vw, (min-width: ${breakpoints.md}px) 25vw, (min-width: ${breakpoints.lg}px) 20vw`}

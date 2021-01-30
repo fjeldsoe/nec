@@ -268,7 +268,7 @@ function App() {
                 <Switch>
                     <Route
                         exact
-                        path="/nec"
+                        path="/"
                         render={(props) => (
                             <Gallery
                                 {...props}
@@ -283,7 +283,7 @@ function App() {
                     />
                     <Route
                         exact
-                        path="/nec/image/:id"
+                        path="/image/:id"
                         render={(props) => {
                             if (images.length) {
                                 const id = props.match.params.id;
@@ -297,14 +297,14 @@ function App() {
                                         user={user}
                                     />
                                 ) : (
-                                    <Redirect to="/nec" />
+                                    <Redirect to="/" />
                                 );
                             }
                         }}
                     />
                     <Route
                         exact
-                        path="/nec/login"
+                        path="/login"
                         render={() =>
                             user === false ? (
                                 <LoginForm onSubmit={signIn}>
@@ -321,14 +321,14 @@ function App() {
                                         onChange={(event) => setPassword(event.target.value)}
                                     />
                                     <LoginButton>Log ind</LoginButton>
-                                    <StyledLink to="/nec">Tilbage</StyledLink>
+                                    <StyledLink to="/">Tilbage</StyledLink>
                                 </LoginForm>
                             ) : (
-                                <Redirect to="/nec" />
+                                <Redirect to="/" />
                             )
                         }
                     />
-                    <Redirect to="/nec" />
+                    <Redirect to="/" />
                 </Switch>
             </Router>
         </AppContext.Provider>

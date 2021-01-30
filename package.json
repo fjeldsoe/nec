@@ -17,6 +17,7 @@
         "react-dom": "^16.13.1",
         "react-draft-wysiwyg": "^1.14.5",
         "react-firebaseui": "^4.1.0",
+        "react-helmet": "^6.1.0",
         "react-router-dom": "^5.2.0",
         "react-scripts": "^4.0.1",
         "react-sortable-hoc": "^1.11.0",

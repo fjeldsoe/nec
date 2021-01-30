@@ -9,6 +9,7 @@ import { Editor } from 'react-draft-wysiwyg';
 import 'react-draft-wysiwyg/dist/react-draft-wysiwyg.css';
 import { stateToHTML } from 'draft-js-export-html';
 import ArrowBackIcon from '@material-ui/icons/ArrowBack';
+import { Helmet } from 'react-helmet';
 
 const GlobalStyles = createGlobalStyle`
     body {
@@ -156,7 +157,7 @@ const SaveButton = styled.button`
     font-weight: bold;
 `;
 
-export default (props) => {
+export default function ImageDetails(props) {
     const { history, image, removeImage, updateDescription } = props;
     const { description } = image;
     const { colors } = image.metadata.visionData;
@@ -192,6 +193,9 @@ export default (props) => {
 
     return (
         <>
+            <Helmet>
+                <meta property="og:image" content={Object.values(image.downloadUrls[0])[0]} />
+            </Helmet>
             <GlobalStyles gradient={gradient.css('radial')} />
             <Wrapper>
                 <ImageWrapper onClick={() => setIsOverlayActive(false)}>
@@ -230,4 +234,4 @@ export default (props) => {
             </Wrapper>
         </>
     );
-};
+}
